@@ -1,0 +1,16 @@
+num_encoder_blocks: 6
+num_decoder_blocks: 6
+dropout: 0.1
+smoothing_rate: 0.1 
+model_size: 512
+ffn_size: 2048
+num_heads: 8
+num_epochs: 200
+batch_size: 256
+max_len: 50
+num_workers: 4
+warmup_step: 4000
+learning_rate: 0.0001
+beta1: 0.9
+beta2: 0.98
+eps: 0.000000001
