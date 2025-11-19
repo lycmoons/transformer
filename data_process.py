@@ -1,41 +1,35 @@
 import yaml
-import utils
-import os
+from utils import get_data, tokenize_and_pad
 import numpy as np
 
 
-
-# 读取超参数
-with open("config.yaml", "r") as f:
+# 获取超参数
+with open("/data/transformer/config.yaml", "r") as f:
     params = yaml.safe_load(f)
+print('成功获取超参数')
 
 
-
-# 创建文件夹
-os.makedirs('processed_data', exist_ok=True)
-
-
-
-# 数据预处理，得到编码器、解码器的输入，以及最终用于计算损失函数的平滑标签
-df = utils.get_train_data()
-df = utils.clean_text(df)
-src_tokens_list, tgt_tokens_list = utils.split_token(df)
-src_token_to_idx, src_idx_to_token, src_vocab_size = utils.build_vocab(src_tokens_list)
-tgt_token_to_idx, tgt_idx_to_token, tgt_vocab_size = utils.build_vocab(tgt_tokens_list)
-label = utils.encode_tokens(tgt_tokens_list, tgt_token_to_idx, params['max_len'], 'label')
-src_input = utils.encode_tokens(src_tokens_list, src_token_to_idx, params['max_len'], 'src')   # (batch_size, seq_len)
-tgt_input = utils.encode_tokens(tgt_tokens_list, tgt_token_to_idx, params['max_len'], 'tgt')   # (batch_size, seq_len)
+# 获取训练数据
+df = get_data(params['train_csv_path'])
+print('成功读取数据')
 
 
+# 数据预处理
+src_input, tgt_input, label = tokenize_and_pad(
+    df, params['en_bpe_prefix'],
+    params['de_bpe_prefix'],
+    params['max_len'],
+    params['pad_id'],
+    params['bos_id'],
+    params['eos_id']
+)
+print('成功完成序列转id并填充')
 
-# 保存结果
-np.save(os.path.join('processed_data', 'label.npy'), np.array(label))
-np.save(os.path.join('processed_data', 'src_input.npy'), np.array(src_input))
-np.save(os.path.join('processed_data', 'tgt_input.npy'), np.array(tgt_input))
-np.save(os.path.join('processed_data', 'vocab_size.npy'), np.array([src_vocab_size, tgt_vocab_size]))
 
-# 字典类型数据读取：np.load("***.npy", allow_pickle=True).item()
-np.save(os.path.join('processed_data', 'src_token_to_idx.npy'), src_token_to_idx)
-np.save(os.path.join('processed_data', 'src_idx_to_token.npy'), src_idx_to_token)
-np.save(os.path.join('processed_data', 'tgt_token_to_idx.npy'), tgt_token_to_idx)
-np.save(os.path.join('processed_data', 'tgt_idx_to_token.npy'), tgt_idx_to_token)
+# 保存数据处理结果
+np.save('/data/processed_data/src_input.npy', src_input)
+print('成功保存编码器输入数据')
+np.save('/data/processed_data/tgt_input.npy', tgt_input)
+print('成功保存解码器输入数据')
+np.save('/data/processed_data/label.npy', label)
+print('成功保存标签数据')

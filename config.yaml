@@ -14,3 +14,21 @@ learning_rate: 0.0001
 beta1: 0.9
 beta2: 0.98
 eps: 0.000000001
+vocab_size: 37000
+
+
+unk_id: 0
+bos_id: 1
+eos_id: 2
+pad_id: 3
+
+
+train_csv_path: /data/wmt_en_de_data/train.csv
+en_corpus_path: /data/corpus/corpus_en.txt
+de_corpus_path: /data/corpus/corpus_de.txt
+en_bpe_prefix: /data/bpe/en_bpe
+de_bpe_prefix: /data/bpe/de_bpe
+
+src_input_path: /data/processed_data/src_input.npy
+tgt_input_path: /data/processed_data/tgt_input.npy
+label_path: /data/processed_data/label.npy
