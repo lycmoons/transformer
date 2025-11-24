@@ -1,22 +1,22 @@
 import torch
 from torch import nn, Tensor
 import math
+from sacrebleu import corpus_bleu
 
 
 ''' 位置编码层 '''
 class PositionEncoder(nn.Module):
-    def __init__(self, dropout: float, device = None):
+    def __init__(self, dropout: float):
         super().__init__()
         self.dropout = nn.Dropout(dropout)
-        self.device = device
 
     # x: (batch_size, seq_len, embed_size)
     def forward(self, x: Tensor) -> Tensor:
         batch_size, seq_len, embed_size = x.shape
-        pos_map = torch.arange(seq_len, device=self.device).unsqueeze(1).expand(seq_len, embed_size)
-        dim_map = torch.arange(embed_size, device=self.device).unsqueeze(0).expand(seq_len, embed_size)
+        pos_map = torch.arange(seq_len).unsqueeze(1).expand(seq_len, embed_size).to(x.device, non_blocking=True)
+        dim_map = torch.arange(embed_size).unsqueeze(0).expand(seq_len, embed_size).to(x.device, non_blocking=True)
         angle = pos_map / torch.pow(10000, 2 * dim_map / embed_size)
-        pe = torch.zeros(seq_len, embed_size, device=self.device)
+        pe = torch.zeros(seq_len, embed_size).to(x.device, non_blocking=True)
         pe[:, 0::2] = torch.sin(angle[:, 0::2])
         pe[:, 1::2] = torch.cos(angle[:, 1::2])
         pe = pe.unsqueeze(0).expand(batch_size, seq_len, embed_size)
@@ -148,7 +148,7 @@ class MaskedCrossEntropyLoss(nn.Module):
 
 
 
-# 学习率调度器
+''' 学习率调度器 '''
 class LRScheduler:
     def __init__(self, optimizer, warmup_steps, model_size):
         self.optimizer = optimizer
@@ -164,4 +164,12 @@ class LRScheduler:
         return lr
 
 
-# TODO 设计 BLEU 函数
+
+''' BLEU指标计算器 '''
+class BLEUCalculator:
+    def __init__(self, tokenize_type='13a'):
+        self.tokenize_type = tokenize_type
+
+    def __call__(self, pred, ref):
+        bleu = corpus_bleu(pred, ref, tokenize=self.tokenize_type)
+        return bleu.score

@@ -1,13 +1,13 @@
 import yaml
 import utils
 import torch
-import os
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
-from transformer import Transformer
 from modules import MaskedCrossEntropyLoss, LRScheduler
 from torch.optim import Adam
 from torch.amp import autocast, GradScaler
+from model import Transformer
+
 
 
 
@@ -49,11 +49,6 @@ print('成功创建数据加载器')
 
 
 
-# 获取可用设备
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-
 # 创建模型实例
 model = Transformer(
     params['num_encoder_blocks'],
@@ -64,7 +59,6 @@ model = Transformer(
     params['dropout'],
     params['num_heads'],
     params['ffn_size'],
-    device
 )
 print('成功创建模型实例')
 
@@ -90,16 +84,13 @@ print('成功生成causal mask')
 
 
 # 指定使用可用设备进行模型训练
-model = model.to(device)
+device_ids = [params['gpu_1'], params['gpu_2'], params['gpu_3'], params['gpu_4']]
+main_device = torch.device(f'cuda:{device_ids[0]}')
+model = model.to(main_device)
 if torch.cuda.device_count() > 1:
-    model = torch.nn.DataParallel(model)
-tgt_causal_mask = tgt_causal_mask.to(device, non_blocking=True)
+    model = torch.nn.DataParallel(model, device_ids=device_ids)
+tgt_causal_mask = tgt_causal_mask.to(main_device, non_blocking=True)
 print('成功将模型放置GPU上')
-
-
-
-# 创建文件夹用于保存模型结果
-os.makedirs('outputs', exist_ok=True)
 
 
 
@@ -113,10 +104,10 @@ for epoch in range(1, params['num_epochs'] + 1):
     epoch_loss = 0.0
     for step, (x, y, l) in enumerate(dataloader):
         print(f'step: {step}')
-        x = x.to(device, non_blocking=True)
-        y = y.to(device, non_blocking=True)
-        l = l.to(device, non_blocking=True)
-        sl = utils.label_smoothing(l.cpu(), params['vocab_size'], params['smoothing_rate']).to(device)
+        x = x.to(main_device, non_blocking=True)
+        y = y.to(main_device, non_blocking=True)
+        l = l.to(main_device, non_blocking=True)
+        sl = utils.label_smoothing(l, params['vocab_size'], params['smoothing_rate'])
         src_padding_mask = utils.create_padding_mask(x).unsqueeze(1).repeat(1, params['max_len'], 1)
         label_padding_mask = utils.create_padding_mask(l)
         optimizer.zero_grad()
@@ -132,8 +123,8 @@ for epoch in range(1, params['num_epochs'] + 1):
 
     # 每 10 个 epoch 保存一下中间结果
     if epoch % 10 == 0:
-        torch.save(model.state_dict(), os.path.join('outputs', f'model_{epoch}.pth'))
-        np.save(os.path.join('outputs', f'lr_histories_{epoch}.npy'), np.array(lr_histories))
-        np.save(os.path.join('outputs', f'loss_histories_{epoch}.npy'), np.array(loss_histories))
+        torch.save(model.state_dict(), f"{params['outputs_dir']}model_{epoch}.pth")
+        np.save(f"{params['outputs_dir']}lr_histories_{epoch}.npy", np.array(lr_histories))
+        np.save(f"{params['outputs_dir']}loss_histories_{epoch}.npy", np.array(loss_histories))
         lr_histories = []
         loss_histories = []

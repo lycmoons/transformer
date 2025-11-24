@@ -67,6 +67,27 @@ def tokenize_and_pad(df: pd.DataFrame, en_bpe_prefix: str, de_bpe_prefix: str,
             
 
 
+# 用于测试集的 tokenization
+def tokenize4test(df: pd.DataFrame, en_bpe_prefix: str, de_bpe_prefix: str,
+                  max_len: int, pad_id: int, eos_id: int):
+    en_sentences = df["en"].astype(str)
+    de_sentences = df["de"].astype(str)
+    en_sp = spm.SentencePieceProcessor(model_file=f'{en_bpe_prefix}.model')
+    de_sp = spm.SentencePieceProcessor(model_file=f'{de_bpe_prefix}.model')
+    src_input = []
+    for line in en_sentences:
+        ids = en_sp.encode(line.strip())[:max_len - 1] + [eos_id]
+        if len(ids) < max_len:
+            ids = ids + [pad_id] * (max_len - len(ids))
+        src_input.append(ids)
+    
+    label = []
+    for line in de_sentences:
+        label.append(de_sp.encode(line.strip())[:max_len - 1])
+    return np.array(src_input), label
+
+
+
 # 对标签进行平滑化处理，label: (batch_size, seq_len)
 def label_smoothing(label: Tensor, vocab_size: int, smoothing_rate: float) -> Tensor:
     confidence = 1 - smoothing_rate

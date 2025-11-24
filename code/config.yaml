@@ -5,7 +5,7 @@ smoothing_rate: 0.1
 model_size: 512
 ffn_size: 2048
 num_heads: 8
-num_epochs: 200
+num_epochs: 30
 batch_size: 256
 max_len: 50
 num_workers: 4
@@ -15,20 +15,24 @@ beta1: 0.9
 beta2: 0.98
 eps: 0.000000001
 vocab_size: 37000
-
-
 unk_id: 0
 bos_id: 1
 eos_id: 2
 pad_id: 3
-
-
+gpu_1: 4
+gpu_2: 5
+gpu_3: 6
+gpu_4: 7
 train_csv_path: /data/wmt_en_de_data/train.csv
+test_csv_path: /data/wmt_en_de_data/test.csv
 en_corpus_path: /data/corpus/corpus_en.txt
 de_corpus_path: /data/corpus/corpus_de.txt
 en_bpe_prefix: /data/bpe/en_bpe
 de_bpe_prefix: /data/bpe/de_bpe
-
 src_input_path: /data/processed_data/src_input.npy
 tgt_input_path: /data/processed_data/tgt_input.npy
 label_path: /data/processed_data/label.npy
+test_src_input_path: /data/processed_data/test_src_input.npy
+test_label_path: /data/processed_data/test_label.json
+outputs_dir: /data/outputs/
+evaluation_result_dir: /data/evaluation/
