@@ -42,16 +42,16 @@ model = model.to(device)
 en_sp = spm.SentencePieceProcessor(model_file=f"{params['en_bpe_prefix']}.model")
 de_sp = spm.SentencePieceProcessor(model_file=f"{params['de_bpe_prefix']}.model")
 
-
-while True:
-    line = input('请输入需要翻译的英文：')
-    if(line == 'exit'):
-        print('程序退出')
-        break
-    ids = en_sp.encode(line.strip())[:params['max_len'] - 1] + [params['eos_id']]
-    if len(ids) < params['max_len']:
-        ids = ids + [params['pad_id']] * (params['max_len'] - len(ids))
-    src_input = torch.tensor([ids]).to(device)
-    src_padding_mask = create_padding_mask(src_input).unsqueeze(1).to(device)
-    predict_ids = model.predict(src_input, src_padding_mask, params['bos_id'], params['eos_id'], params['max_len'])
-    print(f'德文机器翻译：{de_sp.decode(predict_ids)}')
+with torch.no_grad():
+    while True:
+        line = input('请输入需要翻译的英文：')
+        if(line == 'exit'):
+            print('程序退出')
+            break
+        ids = en_sp.encode(line.strip())[:params['max_len'] - 1] + [params['eos_id']]
+        if len(ids) < params['max_len']:
+            ids = ids + [params['pad_id']] * (params['max_len'] - len(ids))
+        src_input = torch.tensor([ids]).to(device)
+        src_padding_mask = create_padding_mask(src_input).unsqueeze(1).to(device)
+        predict_ids = model.predict(src_input, src_padding_mask, params['bos_id'], params['eos_id'], params['max_len'])
+        print(f'德文机器翻译：{de_sp.decode(predict_ids)}')
